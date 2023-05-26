@@ -1,0 +1,449 @@
+---
+title: "EDA of Gender & Diversity in Aerospace"
+author: "Ashlyn Montgomery, Kameron Galm, Nam Jun Lee, Julian Rangel"
+output: word_document
+date: "2023-03-07"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2) #graph
+library(tidyverse) # group_by and summarise
+library(stringr) # regular expression
+library(corrplot) # visual exploratory tool on correlation matrix
+library(gridExtra) # sets up a gtable layout to place multiple grobs on a page
+```
+
+## Dataset Information
+
+There are a total of five datasets to be used in our project, and we will perform exploratory data analysis to understand these datasets.  
+Data 1 to 3 are CSV files listing values obtained by extracting specific words from pdf using "PdfExtract.R".  
+  
+Data 1: Average earnings by race and gender.  
+Data 2: Ratio by gender in the aviation industry.  
+Data 3: Gender leadership position ratio in the aviation industry.  
+Data 4: Salary by gender in the aerospace industry.  
+Data 5: pcgFull.  
+
+```{r loadData, echo=FALSE}
+# load datasets
+pcgFull <- read.csv("../Data/pcgFull.csv")
+raceEarn <- read.csv("../Data/raceEarn.csv")
+aviationRatio <- read.csv("../Data/aviationRatio.csv")
+leadershipRatio <- read.csv("../Data/leadershipPosition.csv")
+genderEarn <- read.csv("../Data/Wage by Sex in Common Jobs.csv")
+```
+
+## Data Preprocessing
+### Data 1
+```{r check1-1, echo= FALSE}
+## raceEarn
+# check data structure 
+str(raceEarn)
+```
+After checking the structure of the first dataset, we know it consists of 3 columns and 8 rows.
+
+```{r check1-2, echo= FALSE}
+# remove special character '$' 
+raceEarn$AvgEarning <- gsub('\\$|\\,', '', raceEarn$AvgEarning)
+# convert data types
+raceEarn$Race <- as.factor(raceEarn$Race)
+raceEarn$Gender <- as.factor(raceEarn$Gender)
+raceEarn$AvgEarning <- as.numeric(raceEarn$AvgEarning)
+# summarize data
+summary(raceEarn)
+# check NA
+sprintf("Total NA: %d",sum(is.na(raceEarn)))
+
+write.csv(raceEarn, "../Final Product/ShinyApp/CleanData/raceEarn.csv")
+```
+In the case of "AvgEarning" variable, special characters are included, so they are removed and converted into numerical variable, and the attributes of each variable are converted into factorial.  
+And as a result of checking the descriptive statistics, it can be seen that there are no missing values and the data are well organized.
+
+### Data 2
+```{r check2-1, echo=FALSE}
+## aviationRatio
+# check data structure
+str(aviationRatio)
+```
+After checking the structure of the second dataset, we know it consists of 3 columns and 18 rows.
+
+```{r check2-2, echo=FALSE}
+# convert data types
+aviationRatio$Gender <- as.factor(aviationRatio$Gender)
+aviationRatio$Occupation <- as.factor(aviationRatio$Occupation)
+# summarize data
+summary(aviationRatio)
+# check NA
+sprintf("Total NA: %d",sum(is.na(aviationRatio)))
+
+write.csv(aviationRatio, "../Final Product/ShinyApp/CleanData/aviationRatio.csv")
+```
+
+As a result of checking the descriptive statistics after converting the properties of each variable into factors, it can be seen that there are no missing values and the data are well organized.
+
+### Data 3
+```{r check3-1, echo=FALSE}
+## leadershipRatio
+# check data structure
+str(leadershipRatio)
+```
+As a result of confirming the structure of the third dataset, it was confirmed that it consisted of 3 columns and 12 rows.
+
+```{r check3-2, echo=FALSE}
+# remove special character '%' 
+leadershipRatio$Ratio <- gsub('\\%', '', leadershipRatio$Ratio)
+# convert data types
+leadershipRatio$Gender <- as.factor(leadershipRatio$Gender)
+leadershipRatio$Ratio <- as.numeric(leadershipRatio$Ratio)
+leadershipRatio$LeadershipPosition <- as.factor(leadershipRatio$LeadershipPosition)
+# summarize data
+summary(leadershipRatio)
+# check NA
+sprintf("Total NA: %d",sum(is.na(leadershipRatio)))
+
+write.csv(leadershipRatio, "../Final Product/ShinyApp/CleanData/leadershipRatio.csv")
+```
+In the case of "Ratio" variable, special characters are included, so they are removed and converted into numerical variable, and the attributes of each variable are converted into factorial.  
+And as a result of checking the descriptive statistics, it can be seen that there are no missing values and the data are well organized.
+
+### Data 4
+```{r check4-1, echo=FALSE}
+## genderEarn
+# check data structure
+str(genderEarn)
+```
+As a result of confirming the structure of the third dataset, it was confirmed that it consisted of 17 columns and 46 rows.
+There are some columns that are not to be used for our project, so it needs to be removed.
+
+```{r check4-2, echo=FALSE}
+# remove uncessary columns
+genderEarn <- genderEarn[,-c(1,3,4,7,9,11,12,13,14,15,17)]
+# replace special character 
+colnames(genderEarn) <- gsub('\\.', '_', colnames(genderEarn))
+# convert data types
+genderEarn$PUMS_Occupation <- as.factor(genderEarn$PUMS_Occupation)
+genderEarn$Sex <- as.factor(genderEarn$Sex)
+# summarize data
+dim(genderEarn)
+summary(genderEarn)
+# check NA
+sprintf("Total NA: %d",sum(is.na(genderEarn)))
+
+write.csv(genderEarn, "../Final Product/ShinyApp/CleanData/genderEarn.csv")
+
+```
+After deleting unnecessary columns, changing the names of each column, and converting attributes of gender and occupational variables into factors. And checking technical statistics shows that there are no missing values and the data are well organized.  
+Also, it can be seen that the finally organized dataset consists of 6 columns and 46 rows.
+
+### Data 5
+```{r check5-1, echo=FALSE}
+## pcgFull
+# check data structure
+str(pcgFull)
+```
+After checking the structure of the first dataset, we know it consists of 11 columns and 549398 rows. and checking the data properties, almost all data is made into characters, so it seems necessary to convert it.
+
+
+```{r check5-2, echo=FALSE}
+# remove unnecessary column
+pcgFull <- pcgFull[,-c(8)]
+# rename column names
+colnames(pcgFull)[c(3,4,6,7,8,9)] <- c("FieldOfStudy",
+                                     "FieldOfStudyLabel",
+                                     "SalaryGroup",
+                                     "JobSatisfaction",
+                                     "JobCode",
+                                     "JobTitle")
+# convert data types
+pcgFull$GENDER <- as.factor(pcgFull$GENDER)
+pcgFull$FieldOfStudyLabel <- as.factor(pcgFull$FieldOfStudyLabel)
+pcgFull$SalaryGroup <- as.factor(pcgFull$SalaryGroup)
+pcgFull$JobTitle <- as.factor(pcgFull$JobTitle)
+pcgFull$JobSatisfaction <- as.factor(pcgFull$JobSatisfaction)
+# find NA
+colSums(is.na(pcgFull))
+# recheck summarize data
+summary(pcgFull)
+```
+First, the "Place.of.Birth" variable is an unnecessary column, so it was deleted, and the data attributes of each variable were first converted to properly check the data. 
+And as a result of checking the sum of the missing values in each column, it can be seen that there are missing values in the "FieldOfStudy", "FieldOfStudyLabel", and "SalaryGroup" variables.  
+To confirm more specifically, we checked the descriptive statistics and found that outliers exist when looking at the minimum and maximum values of the "SALARY" variables and that the "JobTitle" variable also has characters that replace missing values.  
+
+```{r check5-3, echo=FALSE}
+# barplot of field of study
+plotStudy <- ggplot(pcgFull, aes(x=FieldOfStudyLabel, fill=FieldOfStudyLabel)) +
+  geom_bar() + 
+  theme(axis.text.y = element_text(size=7)) +
+  coord_flip() +
+  theme(legend.position = "none")
+# barplot of job title
+plotJob <- ggplot(pcgFull, aes(x=JobTitle,fill=JobTitle)) + 
+  geom_bar() + 
+  theme(axis.text.y = element_text(size=7)) + 
+  coord_flip() +
+  theme(legend.position = "none")
+grid.arrange(plotStudy,plotJob)
+# remove NA
+pcgFull <- pcgFull %>%filter(!is.na(FieldOfStudyLabel))
+pcgFull <- pcgFull %>%filter(FieldOfStudyLabel != "Logical Skip")
+pcgFull <- pcgFull %>%filter(JobTitle != "Logical Skip")
+```
+
+As a result of checking the FieldOfStudyLabel and JobTitle bar plots, it was confirmed that the FieldOfStudyLabel has a NA element, and the two variables contain the same element "Logical Skip". Through this, it was determined that this factor was not answered by the survey respondents, so it was decided to remove it because it was the same as the missing value.
+
+```{r recheck5-4, echo=FALSE}
+# recheck the barplots after removed missing values
+plotStudyAfter <- ggplot(pcgFull, aes(x=FieldOfStudyLabel, fill=FieldOfStudyLabel)) +
+  geom_bar() + 
+  theme(axis.text.y = element_text(size=7)) +
+  coord_flip() +
+  theme(legend.position = "none")
+# barplot of job title
+plotJobAfter <- ggplot(pcgFull, aes(x=JobTitle,fill=JobTitle)) + 
+  geom_bar() + 
+  theme(axis.text.y = element_text(size=7)) + 
+  coord_flip() +
+  theme(legend.position = "none")
+grid.arrange(plotStudyAfter,plotJobAfter)
+```
+
+As a result of re-checking the graph to see if the missing values were well removed, it can be seen that they were well processed.  
+
+```{r check5-5, echo=FALSE}
+# check outliers
+boxplot(pcgFull$SALARY,col="#69b3a2" , main="Salary Boxplot")
+```
+
+As a result of checking the "SALARY" variable through the boxplot, it can be confirmed that there are very many outliers.
+
+```{r check5-6, echo=FALSE}
+# find IQR
+q1 <- quantile(pcgFull$SALARY, probs = .25)
+q3 <- quantile(pcgFull$SALARY, probs = .75)
+iqr <- IQR(pcgFull$SALARY)
+low_outlier <- q1 - 1.5 * iqr
+hi_outlier <- q3 + 1.5 * iqr
+# print minimum & maximum IQR
+sprintf("Minimum: %f, Maximum: %f",low_outlier, hi_outlier)
+# change values beyond the quadrant to missing values
+pcgFull$SALARY <- ifelse(pcgFull$SALARY > hi_outlier| pcgFull$SALARY <= 0, NA, pcgFull$SALARY)
+# check NA
+sprintf("Total NA: %d", sum(is.na(pcgFull$SALARY)))
+```
+
+In order to identify the outliers, the interquartile range was obtained using the formula:  
+$$Observations < 25thPercentile − 1.5 ∗ IQR$$ or $$Observations > 75thPercentile + 1.5 ∗ IQR$$
+Therefore, interquartile range is minimum: -41232.750000, Maximum: 188721.250000. If you look at the minimum value, it is a negative number, but salary can't be negative. So replaced with null values outside the interquartile range (0 < Salary < 188721.25). And when we checked the number of outliers, it turned out to be 32814.
+
+```{r check5-7, echo=FALSE}
+# replace missing values with mean values
+pcgFull$SALARY <- ifelse(is.na(pcgFull$SALARY), mean(pcgFull$SALARY, na.rm=T), pcgFull$SALARY)
+# recheck outliers
+boxplot(pcgFull$SALARY, col="#69b3a2" , main="Salary Boxplot")
+```
+
+It was determined that it was better to replace outliers with an average value than to remove them. So after replacing it with an average value we checked the outliers with a box plot, and as a result, there are still a few outliers existing but we decided to ignore them. Because in some cases where the salary exceeds $200,000.
+
+```{r check5-8, echo=FALSE}
+# barplot of salary group
+ggplot(pcgFull, aes(x=SalaryGroup, fill=SalaryGroup)) + 
+  geom_bar() + 
+  theme(axis.text.y = element_text(size=7)) +
+  labs(title="Salary Group barplot\nBefore reshaping") +
+  theme(legend.position = "none")
+```
+
+As a result of checking the "SalaryGroup", it can be seen that there are five levels, and among them, there are NA levels. There was a change in the "SALARY" variable while removing outliers, so we decided to relocate the values.
+
+```{r check5-9, echo=FALSE}
+# recreate category list for salary
+pcgFull$SalaryGroup <- ifelse(pcgFull$SALARY < 50000, "<50K",
+                         ifelse(pcgFull$SALARY >= 50000 & pcgFull$SALARY < 100000, ">=50K, <100K",
+                                ifelse(pcgFull$SALARY >= 100000 & pcgFull$SALARY < 150000, ">=100K, <150K", ">=150K"))) 
+# convert data type
+pcgFull$SalaryGroup <- as.factor(pcgFull$SalaryGroup)
+# recheck unique elements using barplot
+ggplot(pcgFull, aes(x=SalaryGroup, fill=SalaryGroup)) + 
+  geom_bar() + 
+  theme(axis.text.y = element_text(size=7)) +
+  labs(title="Salary Group\nAfter reshaping") +
+  theme(legend.position = "none")
+```
+
+After relocating, it can be seen from the bar graph that the missing values were well removed and the values were well divided into four levels.
+
+```{r check5-10, echo=FALSE}
+# create columns categorized by factor variable using field of study
+pcgFull$StemStudy <- ifelse(pcgFull$FieldOfStudy == 7, "Non-Stem", "Stem")
+pcgFull$StemJob <- ifelse(pcgFull$JobCode == 7, "Non-Stem", "Stem")
+# convert data types
+pcgFull$StemStudy <- as.factor(pcgFull$StemStudy)
+pcgFull$StemJob <- as.factor(pcgFull$StemJob)
+# recheck any NA in data
+colSums(is.na(pcgFull))
+# summarize data
+summary(pcgFull)
+dim(pcgFull)
+
+write.csv(pcgFull, "../Final Product/ShinyApp/CleanData/pcgFull.csv")
+
+```
+
+The "FieldOfStudy" and "JobCode" variables are composed of seven levels, through which we added derivatives by dividing them into two levels as to whether they were STEM or not.  
+And finally, as a result of checking whether the data is well organized, it can be confirmed that there are no missing values in each column and all variables are well organized. Also, it can be seen that the finally organized dataset consists of 12 columns and 454475 rows.
+
+## Visualization
+```{r check corrleation, echo=FALSE}
+# convert the JobSatisfaction data type using pipe operator
+changeSatisfaction <- pcgFull %>% 
+  filter(!JobSatisfaction == "L") %>% 
+  mutate(Satisfaction = as.numeric(JobSatisfaction))
+# find the corrleation using numeric variables 
+cors <- cor(changeSatisfaction[,c(1,3,5,8,10,13)], method="pearson")
+# plot of corrleation between each numeric variables
+corrplot(cors,method="circle", addCoef.col = 'darkgray',
+         type='lower',
+         tl.cex = 0.7)
+```
+
+Using numerical variables to determine the correlation between each variable, it was found that "FieldOfStudy" and "JobCode" had a slight positive correlation, and the rest of the variables were not related.
+
+```{r visual1-1, echo=FALSE}
+# filter the ratio of only stem job by gender
+gender <- pcgFull %>% 
+  group_by(GENDER) %>% 
+  filter(StemJob == "Stem") %>% 
+  tally() %>% 
+  mutate(ratio = round(n/sum(n)*100,2),
+         percent = paste(ratio,'%'))
+# plot of ratio of stem field by gender
+a1 <- ggplot(gender, aes(x='', y=n, fill=GENDER)) +
+  geom_bar(stat='identity', width=1, color="white") +
+  theme_void() + # remove backgroud, grid, numeric labels
+  coord_polar('y', start=0) +
+  labs(title="Ratio of Gender in STEM") +
+  theme(legend.title = element_text(size=6.5, face='bold'),
+        plot.title = element_text(face='bold')) +
+  geom_text(aes(label=format(percent,
+                             drop0trailing = TRUE)),
+            position=position_stack(vjust=0.5))
+# filter the distribution of gender in stem job by year 
+yr_gender <- pcgFull %>% 
+  group_by(Year, GENDER) %>% 
+  filter(StemJob == "Stem") %>% 
+  tally()
+# plot of distribution of gender in stem job by year
+a2<- ggplot(yr_gender, aes(x = Year, y = n, colour = GENDER)) +
+  geom_line() +
+  geom_point() +
+  theme(plot.title = element_text(face="bold", size=8, vjust=1),
+        legend.title = element_text(size=8, face='bold')) +
+  labs(title= "Distribution of Gender in STEM by Year",
+       x = "Year", y = "Count", fill = "Gender") +
+  scale_x_continuous(breaks = c(2003, 2010, 2013, 
+                                2015, 2017, 2019)) +
+  theme_bw()
+grid.arrange(a1,a2)
+
+```
+
+As can be seen from the above graph, in the case of STEM fields, the gender ratio is slightly more distributed for men, and as a result of checking the annual distribution, it can be seen that the number of employees in STEM fields has increased since 2017.  
+But noticeably, the proportion of women is better than that of men.
+
+```{r visual1-2, echo=FALSE}
+# plot of ratio of gender aviation occupations
+ggplot(aviationRatio, aes(x= Occupation, y=Ratio, fill=Gender)) +
+  geom_col(position = "dodge") +
+  coord_flip() +
+  theme(axis.text = element_text(size=7),
+        plot.title = element_text(face="bold", hjust=1, size=9)) +
+  labs(title="Ratio of Gender in Aviation occupations",y="Ratio (%)") +
+  scale_fill_manual(values=c('#0072B2','#FF9999'))
+```
+
+Therefore, as a result of checking the ratio of women and men in the aviation industry to further subdivide it, it can be confirmed that the gender ratio of the aviation industry is far more numerous to men except for flight attendants.  
+
+```{r visual2, echo=FALSE}
+# filter the only stem job
+onlyStem <- pcgFull %>% 
+  filter(StemJob == "Stem")
+# count the gender in each field of study
+onlyStem1 <- onlyStem %>% 
+  group_by(StemStudy, GENDER) %>% 
+  tally()
+# plot of graduating from STEM or non-STEM fields in STEM industries by gender
+ggplot(onlyStem1, aes(fill=GENDER, y=n, x=StemStudy)) + 
+  geom_bar(position="dodge", stat="identity") +
+  theme(axis.text = element_text(size=7),
+        plot.title = element_text(face="bold")) +
+  labs(title="Graduating from STEM or non-STEM majors\nIn STEM industries",y="Count", 
+      x= "Field of Study") +
+    scale_fill_manual(values=c('#FF9999','#0072B2')) +
+  theme_bw()
+```
+
+And as a result of identifying the distribution of STEM employees according to the graduation rate in related fields, the proportion of men and women who graduated from the STEM field was not equally large, and in the case of employees who graduated from the STEM field, men were more engaged in the STEM industry than women.  
+
+```{r visual3-1, echo=FALSE}
+# plot of gender ratio of salary group in STEM
+ggplot(onlyStem) +
+  geom_bar(mapping = aes(x= SalaryGroup, fill=GENDER), position="fill") +
+  labs(title= "Gender wage gap in STEM",
+      x = "Group", y = "Ratio (%)", fill = "Gender") +
+  scale_x_discrete(limits = c("<50K", ">=50K, <100K",
+                              ">=100K, <150K", ">=150K")) +
+  theme_bw()
+```
+
+In addition, visualizing gender pay by the salary group confirmed that many women were paid less than 50,000 and that most of the employees who were paid more than 50,000 were male.  
+
+```{r visual3-2, echo=FALSE}
+# plot of average salary by race and gender in STEM
+ggplot(raceEarn, aes(x=Race, y=AvgEarning, fill = Gender)) +
+  geom_col() +
+  geom_text(aes(label=format(AvgEarning)), vjust=1.5) +
+  theme(plot.title = element_text(face="bold", size=11, vjust=1),
+        legend.title = element_text(size=8, face='bold')) +
+  scale_fill_manual(values=c('#0072B2','#FF9999')) +
+  labs(title= "Gender wage gap in STEM",
+      x = "Race", y = "AvgSalary ($)", fill = "Gender")
+```
+
+As a result of looking at the above graph, we can see that Asians are paid the most, and Black is paid the least. Also, when checking all the average salaries by each race, it can be seen that women are paid less than men.  
+
+```{r visual3-3, echo=FALSE}
+# filter gender aerospace engineers salary by year between 2014 to 2020
+aerospaceEarn <- genderEarn %>% 
+  filter(PUMS_Occupation == "Aerospace engineers") %>% 
+  group_by(Sex,Year) %>% 
+  summarise(meanSalary = mean(Average_Wage),
+            .groups = 'drop')
+# plot of gender average wage in aerospace engineer
+ggplot(data = aerospaceEarn, aes(x='',y=meanSalary, fill=Sex)) +
+  geom_col(position = "dodge") +
+  theme(plot.title = element_text(face="bold", size=11, vjust=1),
+        legend.title = element_text(size=8, face='bold'),
+        axis.text = element_text(size=6)) +
+  labs(title= "Average of Gender Wage Differences\nIn Aerospace engineers: 2014-2020",
+       x= "Aerospace Engineer", y = "AvgSalary ($)", fill = "Gender")
+```
+
+To further refine it, we checked the average annual salary of a gender aerospace engineer from 2014 to 2020, and found that female employees were paid less than 100,000, and men were paid more than 120,000.  
+
+```{r viusal3-4, echo= FALSE}
+# plot of gender leadership position ratio in aerospace
+ggplot(data = leadershipRatio, aes(x=LeadershipPosition, y=Ratio, fill=Gender)) +
+  geom_col(position = "dodge") +
+  theme(plot.title = element_text(face="bold", size=11, vjust=1),
+        legend.title = element_text(size=8, face='bold')) +
+  scale_fill_manual(values=c('#0072B2','#FF9999')) +
+  labs(title= "Gender leadership position ratio\nIn Aerospace",
+      x = "Leadership Position", y = "Ratio (%)", fill = "Gender")
+```
+
+Finally, as a result of checking the gender ratio in the leadership position by gender, it can be seen that men are overwhelmingly more distributed than women.  
+
+## Conclusion
+
+Through this analysis, STEM still prefers men to women, and even if they graduate from the same field, it can be judged that there is gender discrimination in STEM (add a little more specifically, aerospace) because there is a wage gap between gender and race.
