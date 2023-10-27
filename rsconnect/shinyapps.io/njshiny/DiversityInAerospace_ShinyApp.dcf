@@ -1,0 +1,12 @@
+name: DiversityInAerospace_ShinyApp
+title: DiversityInAerospace_ShinyApp
+username: njshiny
+account: njshiny
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 10331183
+bundleId: 7859804
+url: https://njshiny.shinyapps.io/DiversityInAerospace_ShinyApp/
+version: 1
+asMultiple: FALSE
+asStatic: FALSE
